@@ -1,0 +1,1301 @@
+apiVersion: 1
+groups:
+    - orgId: 3
+      name: eks-prod-cluster
+      folder: Alert-rules
+      interval: 1m
+      rules:
+        - uid: efuy83q5lem0we
+          title: EKS PROD - Node NotReady
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(kube_node_info{service="obs-kube-state-metrics"})
+                      -
+                    sum(kube_node_status_condition{service="obs-kube-state-metrics",condition="Ready",status="true"})
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: 'total node ≠ ready node olduğunda tetiklenir (en az bir node Ready değil). Kaynak paneller: EKS dashboard "Total Nodes" (id 1) ve "Ready Nodes" (id 2).'
+            summary: 'EKS PROD: en az bir node NotReady durumda (not-ready node sayısı: {{ $values.A.Value }}).'
+          labels:
+            severity: critical
+            stack: eks-prod
+          isPaused: false
+        - uid: afuy21sdfrabkf
+          title: Deployment Down - Zero Available Replicas
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                datasource:
+                    type: prometheus
+                    uid: afl5b2ub9alfke
+                editorMode: code
+                expr: count((kube_deployment_spec_replicas{namespace=~".*", service="obs-kube-state-metrics"} > 0) and (kube_deployment_status_replicas_available{namespace=~".*", service="obs-kube-state-metrics"} == 0)) or vector(0)
+                instant: false
+                interval: ""
+                intervalMs: 15000
+                legendFormat: Down
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0.5
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          dashboardUid: dotnet-application-metrics-main
+          panelId: 3
+          noDataState: Alerting
+          execErrState: Error
+          for: 1m
+          annotations:
+            __dashboardUid__: dotnet-application-metrics-main
+            __panelId__: "3"
+            description: Bir veya daha fazla Kubernetes deployment'ı spec.replicas > 0 olmasına rağmen 0 available replica'ya sahip, yani deployment down durumda.
+            summary: '{{ $values.C }} deployment(s) 0 available replica''ya sahip'
+          labels:
+            severity: critical
+            stack: eks-prod
+          isPaused: false
+        - uid: ffuycsha175dsb
+          title: EKS PROD - CrashLoopBackOff
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, pod, container) (
+                        max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}[5m])
+                      ) > 0
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: 'Son 5 dk içinde CrashLoopBackOff''a giren container sayısı > 0 olduğunda tetiklenir. Kaynak: eks2 dashboard "CrashLoop" paneli (id 62).'
+            summary: 'EKS PROD: {{ $values.A.Value }} container CrashLoopBackOff durumunda.'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+        - uid: efuygvkmrl88we
+          title: EKS PROD - Deployment Unhealthy
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, deployment) (
+                        min_over_time(kube_deployment_status_condition{condition="Available", status="false"}[5m])
+                      ) > 0
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 1m
+          annotations:
+            description: 'condition=Available, status=false metriği 5 dk kesintisiz 1 olan deployment sayısı > 0 olduğunda tetiklenir. Kaynak: eks2 dashboard "Unhealthy" paneli (id 64).'
+            summary: 'EKS PROD: {{ $values.A.Value }} deployment 5 dk+ süredir Available değil (servis erişilemez olabilir).'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+        - uid: afuyney8ozlkwc
+          title: EKS PROD - ImagePullBackOff
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, pod, container) (
+                        max_over_time(kube_pod_container_status_waiting_reason{reason=~"ImagePullBackOff|ErrImagePull"}[5m])
+                      ) > 0
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 3m
+          annotations:
+            description: 'ImagePullBackOff veya ErrImagePull waiting reason''ına son 5 dk içinde düşen container sayısı > 0 olduğunda tetiklenir. Kaynak: eks2 dashboard "ImagePullBackOff" paneli (id 86).'
+            summary: 'EKS PROD: {{ $values.A.Value }} container ImagePullBackOff/ErrImagePull durumunda (muhtemelen hatalı imaj/tag veya registry auth).'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+        - uid: cfuynyi182nlsb
+          title: EKS PROD - OOMKilled
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      (
+                        max by (namespace, pod, container) (
+                          increase(kube_pod_container_status_restarts_total[5m])
+                        ) > 0
+                      )
+                      and on(namespace, pod, container) (
+                        max by (namespace, pod, container) (
+                          kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}
+                        ) == 1
+                      )
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 1m
+          annotations:
+            description: 'Son 5 dk içinde restart sayacı artmış VE son termination sebebi OOMKilled olan container sayısı > 0 olduğunda tetiklenir. Kaynak: eks2 dashboard "OOMKilled" paneli (id 60).'
+            summary: 'EKS PROD: son 5 dk içinde {{ $values.A.Value }} container OOMKilled ile restart oldu (memory limit yetersiz olabilir).'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Critical
+        - uid: cfuyoph97t340f
+          title: EKS PROD - PVC Pending
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, persistentvolumeclaim) (
+                        kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1
+                      )
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: 'phase=Pending olan PVC sayısı 5 dk kesintisiz > 0 olduğunda tetiklenir. Pod ContainerCreating''de takılıysa kök sebep genelde budur. Kaynak: eks2 dashboard "PVC Pending" paneli (id 92).'
+            summary: 'EKS PROD: {{ $values.A.Value }} PVC 5 dk+ süredir Pending (volume bağlanamıyor — storage class / provisioner / kota kontrol et).'
+          labels:
+            cluster: eks-prod
+            severity: warning
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Warning
+        - uid: bfuypbyxtxm9sd
+          title: EKS PROD - Failed Pods
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    sum(
+                      (
+                        max by (namespace, pod) (
+                          kube_pod_status_phase{phase="Failed"} == 1
+                        )
+                      )
+                      unless on (namespace, pod)
+                      (
+                        max by (namespace, pod) (
+                          kube_pod_status_reason{reason="Evicted"} == 1
+                        )
+                      )
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: 'phase=Failed olan pod sayısı 5 dk kesintisiz > 0 olduğunda tetiklenir. Evicted pod''lar ayrı izlenir. Kaynak: eks2 dashboard "Failed" paneli (id 83).'
+            summary: 'EKS PROD: {{ $values.A.Value }} pod Failed fazında — 5 dk+ sürüyor.'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Critical
+        - uid: dfuyq5g352mm8a
+          title: EKS PROD - Waiting Containers
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, pod, container) (
+                        max_over_time(kube_pod_container_status_waiting_reason{reason=~"InvalidImageName|CreateContainerConfigError|CreateContainerError|RunContainerError"}[5m])
+                      ) > 0
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: waiting reason InvalidImageName / CreateContainerConfigError / CreateContainerError / RunContainerError olan container sayısı son 5 dk içinde > 0 olduğunda tetiklenir. "Waiting Containers" paneli (id 63).
+            summary: 'EKS PROD: {{ $values.A.Value }} container config/runtime hatasıyla takılı (eksik ConfigMap/Secret, geçersiz imaj adı veya container yaratma hatası).'
+          labels:
+            cluster: eks-prod
+            severity: warning
+            team: sre
+          isPaused: false
+        - uid: afuyratg62lmoc
+          title: EKS PROD - Init Container Issues
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, pod, container) (
+                        max_over_time(kube_pod_init_container_status_waiting_reason{reason=~"CrashLoopBackOff|ImagePullBackOff|ErrImagePull|CreateContainerConfigError|CreateContainerError|RunContainerError"}[5m])
+                      ) > 0
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: init container'ların waiting reason'ı CrashLoopBackOff/ImagePullBackOff/ErrImagePull/CreateContainerConfigError/CreateContainerError/RunContainerError olan sayısı son 5 dk içinde > 0 olduğunda tetiklenir. Normal container panelleri init'leri kaçırır.
+            summary: 'EKS PROD: {{ $values.A.Value }} init container sorunlu (CrashLoop/ImagePull/config hatası) — pod''lar başlayamıyor olabilir.'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Critical
+        - uid: cfv1eps4et2iob
+          title: EKS PROD - Pods Pending
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    sum(
+                      max by (namespace, pod) (
+                        kube_pod_status_phase{phase="Pending"}
+                      )
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 10m
+          annotations:
+            description: phase=Pending pod sayısı 10 dk kesintisiz > 0 olduğunda tetiklenir. Normal deploy/scale'de kısa Pending beklenir; uzun süren Pending scheduling/kapasite sorununa işaret eder.
+            summary: 'EKS PROD: {{ $values.A.Value }} pod 10 dk+ süredir Pending (yer/kaynak yok, taint/affinity veya kota problemi olabilir).'
+          labels:
+            cluster: eks-prod
+            severity: warning
+            team: sre
+          isPaused: false
+        - uid: afv1f59eesrggc
+          title: EKS PROD - Failed Jobs
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, job_name) (
+                        kube_job_status_failed
+                      ) > 0
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 1m
+          annotations:
+            description: 'kube_job_status_failed > 0 olan Job sayısı > 0 olduğunda tetiklenir. Metrik yapışkandır: failed Job objesi silinene/TTL dolana kadar firing kalır. CronJob''lar için failedJobsHistoryLimit ve ttlSecondsAfterFinished ile hijyen önerilir.'
+            summary: 'EKS PROD: {{ $values.A.Value }} Job başarısız durumda (henüz temizlenmemiş — retry veya manuel müdahale gerekebilir).'
+          labels:
+            cluster: eks-prod
+            severity: warning
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Warning
+        - uid: dfv1fu4fqir5sd
+          title: EKS PROD - Evicted Pods
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    sum(
+                      max by (namespace, pod) (
+                        kube_pod_status_reason{reason="Evicted"} == 1
+                      )
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 1m
+          annotations:
+            description: 'reason=Evicted pod sayısı > 0 olduğunda tetiklenir. Eviction node seviyesi kaynak baskısına (disk/memory) işaret eder. Metrik yapışkandır: Evicted pod objesi silinene kadar firing kalır — düzenli temizlik önerilir.'
+            summary: 'EKS PROD: {{ $values.A.Value }} pod Evicted (node kaynak baskısı — genelde disk veya memory).'
+          labels:
+            cluster: eks-prod
+            severity: warning
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Warning
+        - uid: afv1iwcochekgc
+          title: EKS PROD - Node CPU High
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    sum(rate(container_cpu_usage_seconds_total{container!="POD",container!=""}[5m])) by(instance)
+                    / on(instance) group_left()
+                    sum(machine_cpu_cores) by(instance) * 100
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 10m
+          annotations:
+            description: Bir node'un CPU kullanımı 15 dk kesintisiz %80 üstünde kaldığında tetiklenir. Her node ayrı değerlendirilir. Anlık spike'lar 15 dk pending ile elenir.
+            summary: 'EKS PROD: {{ $labels.instance }} node''unda CPU 15 dk+ %80 üstünde ({{ $values.A.Value }}%).'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Critical
+        - uid: dfv1k7dwdnmrkf
+          title: EKS PROD - Node Memory High (warning)
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    sum(container_memory_usage_bytes{container!="POD",container!=""}) by(instance)
+                    / on(instance) group_left()
+                    sum(machine_memory_bytes) by(instance) * 100
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 75
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: Bir node'un memory kullanımı 15 dk kesintisiz %70-85 arasında kaldığında tetiklenir. %85 üstü ayrı critical alarmda.
+            summary: 'EKS PROD: {{ $labels.instance }} node memory 15 dk+ yüksek ({{ $values.A.Value }}%) — 70-85 bandında.'
+          labels:
+            cluster: eks-prod
+            severity: warning
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Warning
+        - uid: cfv1lmf80yewwb
+          title: EKS PROD - Pods per Node High
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: sum(kubelet_running_pods) by(instance)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 58
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 10m
+          annotations:
+            description: |-
+                Bir node'daki çalışan pod sayısı 10 dk kesintisiz 58'i aştığında tetiklenir. EKS'te node başına pod limiti (ENI tabanlı) doluyor; yeni pod'lar bu node'a schedule edilemez, Pending'e düşebilir.  Kapasite planlaması / node ekleme sinyali.
+
+                Save rule and exit.
+
+                Bununla node kapasite üçlüsü tamamlandı: CPU + Memory + Pod sayısı — bir node'u sıkıştırabilecek üç boyut da kapalı. Bu, çoğu ekibin gözden kaçırdığı ama EKS'te sık vuran bir alarm; iyi bir seçim.
+
+                Kaydedince söyle. Not olarak: sonda istediğin detaylı özet tablo için tüm bu nüansları (metrik, pending, gerekçe, kategori) zaten biriktiriyorum — alarmlar bitince tek seferde temiz bir tablo çıkaracağım. Sıradaki widget'ı ver.
+            summary: 'EKS PROD: {{ $labels.instance }} node''unda pod sayısı {{ $values.A.Value }} (>58) — node pod kapasitesine yaklaşıyor'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Critical
+        - uid: cfv1p7lhocnwgf
+          title: EKS PROD - Deployment Replicas Unavailable
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, deployment) (
+                        kube_deployment_status_replicas_unavailable{service="obs-kube-state-metrics"}
+                      ) >= 1
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 10m
+          annotations:
+            description: 'kube_deployment_status_replicas_unavailable >= 1 olan deployment sayısı 10 dk kesintisiz > 0 olduğunda tetiklenir. Rolling update sırasında geçici unavailable normaldir; 10 dk pending bunu eler. Deployment komple down''ı Alert #3 (Deployment Unhealthy, critical) yakalar — bu onun kısmi/erken sinyali.'
+            summary: 'EKS PROD: {{ $values.A.Value }} deployment''ta unavailable replica var'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+        - uid: efv25abyh4s1sb
+          title: EKS PROD - FIRING OLMALI - Watchdog (DeadMansSwitch)
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: vector(1)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 0s
+          annotations:
+            description: Kasıtlı olarak sürekli firing kalan DeadMansSwitch. vector(1) her zaman 1 döndürür. healthchecks.io bu heartbeat'i 5 dk beklemezse alerting sisteminin öldüğünü bildirir. Google Chat'e bağlanmaz.
+            summary: Watchdog firing — alerting pipeline hayatta. Bu sinyal healthchecks.io'ya gider; kesilirse pipeline ölmüştür.
+          labels:
+            cluster: eks-prod
+            severity: watchdog
+            team: sre
+          isPaused: false
+        - uid: efv545d29yxogc
+          title: EKS PROD - kube-state-metrics Down
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: absent(kube_node_info{service="obs-kube-state-metrics"})
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            description: 'absent(kube_node_info{...}) = 1 olduğunda, yani KSM metrikleri 5 dk boyunca hiç gelmediğinde tetiklenir. KSM down iken 18 alarm birden No-Data''ya düşer; bu alarm kök sebebi tek mesajda verir. NOT: No-data state OK''e ayarlandı — absent boş dönmesi (KSM sağlıklı) normal durumdur.'
+            summary: 'EKS PROD: kube-state-metrics veri vermiyor — TÜM KSM tabanlı alarmlar kör. Diğer No-Data alarmlarının kök sebebi büyük ihtimalle budur.'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+        - uid: ffvfw8j7xv9q8d
+          title: EKS PROD - HPA Maxed Out
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afl5b2ub9alfke
+              model:
+                editorMode: code
+                expr: |-
+                    count(
+                      max by (namespace, horizontalpodautoscaler) (
+                        kube_horizontalpodautoscaler_status_current_replicas{service="obs-kube-state-metrics"}
+                      )
+                      ==
+                      max by (namespace, horizontalpodautoscaler) (
+                        kube_horizontalpodautoscaler_spec_max_replicas{service="obs-kube-state-metrics"}
+                      )
+                    ) or vector(0)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: 'current_replicas == max_replicas olan HPA sayısı 15 dk kesintisiz > 0 olduğunda tetiklenir. HPA tavana dayanmış; yük artarsa pod ekleyemez, servis boğulabilir. Aksiyon: max''ı artır veya kök sebebe bak (trafik/kaynak).'
+            summary: 'EKS PROD: {{ $values.A.Value }} HPA 15 dk+ süredir max replica''da — otomatik ölçekleme tükendi, daha fazla scale edemiyor.'
+          labels:
+            cluster: eks-prod
+            severity: critical
+            team: sre
+          isPaused: false
+          notification_settings:
+            receiver: SRE System Alerts - Critical
