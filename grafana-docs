@@ -72,7 +72,7 @@ Dashboard: AWSAPIGat, Panel 503. Toplam kural: 2 (2 normal)
 | Endpoint Latency Dağılımı (P50/P90/P95/P99) | p99 > 5000ms | 3m | critical | SRE System Alerts Critical |
 | Endpoint Latency Dağılımı (P50/P90/P95/P99) (copy) | p99 > 3500ms | 3m | warning | SRE System Alerts Warning |
 
-Dikkat: Warning kuralının açıklama metninde threshold "2000ms" yazıyor ancak gerçek threshold konfigürasyonu 3500ms.
+Dikkat: Warning kuralının açıklama metninde threshold "2000ms" yazıyor ancak gerçek threshold konfigürasyonu 3500ms. Açıklama güncellenmemiş, düzeltilmeli.
 
 ## 4. RDS
 
@@ -96,6 +96,6 @@ Not: Write Latency kuralları statik bir threshold değil, son 5 dakikalık orta
 | healthchecks.io (Watchdog) | 1 | Alerting pipeline'ın canlılığını izleme (heartbeat) |
 
 
+## Bilinen Sorunlar
 
-## -
-- Endpoint Latency warning kuralının açıklama metni (2000ms) gerçekte (3500ms) 
+- Endpoint Latency warning kuralının açıklama metninde yazan threshold (2000ms), gerçek konfigürasyonla (3500ms) uyuşmuyor.
