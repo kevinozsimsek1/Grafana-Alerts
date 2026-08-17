@@ -1,7 +1,7 @@
 
 # Grafana Alert Kuralları
 
-Kaynak: Grafana Alerting YAML export (provisioning format, apiVersion: 1, orgId: 3). Alert-rules klasörü altında 4 grup var: 5xx Root Cause, eks-prod-cluster, Endpoint Latency, RDS.
+Kaynak: Grafana Alerting YAML export (provisioning format, apiVersion: 1, orgId: 3). Alert-rules klasörü altında 4 grup var  5xx Root Cause, eks-prod-cluster, Endpoint Latency, RDS.
 
 | Grup | Durum | Interval |
 |---|---|---|
@@ -58,11 +58,11 @@ Cluster: eks-prod, team: sre. Toplam kural: 19 (1 firing, 18 normal)
 | EKS PROD - FIRING OLMALI - Watchdog (DeadMansSwitch) | vector(1) — her zaman true | 0s | watchdog | healthchecks.io |
 | EKS PROD - kube-state-metrics Down | absent(kube_node_info) — KSM veri vermiyor | 5m | critical | — |
 
-Firing olan kural: Watchdog (DeadMansSwitch) — vector(1) ile her zaman true dönen, kasıtlı sürekli firing bir kural. Amacı healthchecks.io'ya heartbeat göndermek, Google Chat'e bildirim atmıyor. Bu normal, aksiyon gerekmiyor.
+Firing olan kural: Watchdog (DeadMansSwitch) — vector(1) ile her zaman true dönen, kasıtlı sürekli firing bir kural. Amacı healthchecks.io'ya göndermek
 
 Mimari not: kube-state-metrics Down kuralı, gruptaki 17 alarmın çoğunun kaynağı olan KSM servisinin ayakta olup olmadığını izler; KSM down olduğunda diğer alarmlar no data'ya düşer.
 
-Pod kapasite izleme üçlüsü: Node CPU High, Node Memory High ve Pods per Node High — CPU, memory ve pod/ENI limiti olmak üzere bir node'u sıkıştırabilecek 3 boyutu birlikte kapsar.
+Pod kapasite izleme üçlüsü: Node CPU High, Node Memory High ve Pods per Node High CPU, memory ve pod/ENI limiti.
 
 ## 3. Endpoint Latency
 
@@ -86,7 +86,7 @@ Dashboard: aws-executive-overview-v3. Toplam kural: 4
 | RDS Aurora CPU Utilization Alert | CPU Utilization > %85 | 5m | critical |
 | RDS Write Latency Error | Write Latency sapma oranı > 3 | 1m | critical |
 
-Not: Write Latency kuralları statik bir threshold değil, son 5 dakikalık ortalamayı son 48 saatlik min-max aralığına göre normalize eden matematiksel bir ifade (math expression) kullanıyor — anomali tabanlı bir yaklaşım.
+Not: Write Latency kuralları statik bir threshold değil, son 5 dakikalık ortalamayı son 48 saatlik min-max aralığına göre normalize eden matematiksel bir ifade (math expression) kullanıyor  anomali tabanlı bir yaklaşım.
 
 ## Notification Receiver Özeti
 
@@ -97,6 +97,6 @@ Not: Write Latency kuralları statik bir threshold değil, son 5 dakikalık orta
 | healthchecks.io (Watchdog) | 1 | Alerting pipeline'ın canlılığını izleme (heartbeat) |
 
 
-## Bilinen Sorunlar
+## not
 
 - Endpoint Latency warning kuralının açıklama metninde yazan threshold (2000ms), gerçek konfigürasyonla (3500ms) uyuşmuyor.
